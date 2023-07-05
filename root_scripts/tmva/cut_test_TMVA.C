@@ -31,7 +31,7 @@
 #include <ROOT/TThreadedObject.hxx>
 
 static const bool hasGEM = true;
-static const bool plotOnlyGEM = true;
+static const bool plotOnlyGEM = false;
 
 const float wp = 0.6;
 
@@ -254,7 +254,7 @@ TCanvas* cut_test_from_name(const char* filename) {
 					recoTrueCut.Fill(reco_mu_pt);
 				}
 			}
-		} else if (!plotOnlyGEM) {
+		} else if (!plotOnlyGEM && !reco_mu_isGEM) {
 			recoCut.Fill(reco_mu_pt);
 			if (reco_mu_isFake) {
 				n_false_cut++;
