@@ -179,9 +179,9 @@ TCanvas* cut_test_from_name(const char* filename) {
     Int_t n_entries = gen_tree->GetEntries();
 	for (int iEntry = 0; gen_tree->LoadTree(iEntry) >= 0; ++iEntry) {
 	    gen_tree->GetEntry(iEntry);
-		gen.Fill(gen_mu_pt);
-
+		
 		n_gen++;
+		gen.Fill(gen_mu_pt);
 	}
 
 	n_entries = read_tree->GetEntries();
@@ -191,6 +191,10 @@ TCanvas* cut_test_from_name(const char* filename) {
 	   	if (iEntry%(n_entries/100*5) == 0) {
 	   		std::cout << "\t" << iEntry/(n_entries/100) << "\% complited..." << std::endl;
 			std::cout << "\t\tadvancment: " << n_gen << "  " << n_false << "/" << n_true << " -> " << n_false_cut << "/" << n_true_cut << std::endl;
+	   	}
+
+	   	if (reco_mu_eta < 1.6 || reco_mu_eta > 2.8) {
+	   		continue;
 	   	}
 
 		if (!plotOnlyGEM || base_cut(
@@ -222,39 +226,41 @@ TCanvas* cut_test_from_name(const char* filename) {
 			}
 		}
 
-		if (base_cut(
-				reco_mu_isGEM,
-				reco_isTracker,
-				reco_isGlobal,
-				nHitsMu,
-				nHitsTracker,
-				nHitsPix,
-				reco_mu_localChi2,
-				reco_mu_normChi2,
-				reco_mu_pt,
-				reco_mu_eta,
-				reco_mu_dxy,
-				reco_mu_dz,
-			    nPV,
-				reco_mu_highPurity,
-				reco_mu_nMatches,
-				reco_muGEMquality
-			))
-		{
-			float proba = reader->EvaluateMVA("BDTG");
-		    bool  pass = proba > wp;
+		if (reco_mu_isGEM) {
+				if (base_cut(
+					reco_mu_isGEM,
+					reco_isTracker,
+					reco_isGlobal,
+					nHitsMu,
+					nHitsTracker,
+					nHitsPix,
+					reco_mu_localChi2,
+					reco_mu_normChi2,
+					reco_mu_pt,
+					reco_mu_eta,
+					reco_mu_dxy,
+					reco_mu_dz,
+				    nPV,
+					reco_mu_highPurity,
+					reco_mu_nMatches,
+					reco_muGEMquality
+				))
+			{
+				float proba = reader->EvaluateMVA("BDTG");
+			    bool  pass = proba > wp;
 
-		    if (pass) {
-				recoCut.Fill(reco_mu_pt);
-				if (reco_mu_isFake) {
-					n_false_cut++;
-					recoFakeCut.Fill(reco_mu_pt);
-				} else {
-					n_true_cut++;
-					recoTrueCut.Fill(reco_mu_pt);
+			    if (pass) {
+					recoCut.Fill(reco_mu_pt);
+					if (reco_mu_isFake) {
+						n_false_cut++;
+						recoFakeCut.Fill(reco_mu_pt);
+					} else {
+						n_true_cut++;
+						recoTrueCut.Fill(reco_mu_pt);
+					}
 				}
 			}
-		} else if (!plotOnlyGEM && !reco_mu_isGEM) {
+		} else if (!plotOnlyGEM) {
 			recoCut.Fill(reco_mu_pt);
 			if (reco_mu_isFake) {
 				n_false_cut++;
