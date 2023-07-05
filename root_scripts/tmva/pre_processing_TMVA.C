@@ -268,7 +268,7 @@ void tmva_pre_processing_from_file(const char* filename) {
 	   		}
 
 	    	write_reco_mu_isFake     = !isTrueMuon;
-	    	write_reco_mu_isGEM      = hasGEM ? false : reco_mu_isGEM[i];
+	    	write_reco_mu_isGEM      = hasGEM ? reco_mu_isGEM[i] : false;
 	    	write_reco_isTracker     = reco_isTracker    [i];
 	    	write_reco_isGlobal      = reco_isGlobal     [i];
 	    	write_nHitsMu            = nHitsMu           [i];

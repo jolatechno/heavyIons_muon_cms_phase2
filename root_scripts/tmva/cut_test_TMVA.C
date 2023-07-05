@@ -97,8 +97,8 @@ TCanvas* cut_test_from_name(const char* filename) {
 	std::cout << "Read file..." << std::endl;
 	
   	TFile *myFile    = TFile::Open(filename);
-    TTree *read_tree = (TTree*)myFile->Get("myTree");
-    TTree *gen_tree  = (TTree*)myFile->Get("genTree");
+    TTree *read_tree = (TTree*)myFile->Get("muTree_test");
+    TTree *gen_tree  = (TTree*)myFile->Get("genTree_test");
 
 	std::cout << "Set branches adress..." << std::endl;
 
