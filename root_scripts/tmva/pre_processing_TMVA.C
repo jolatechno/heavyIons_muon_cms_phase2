@@ -21,41 +21,11 @@
 #include <ROOT/TTreeProcessorMT.hxx>
 #include <ROOT/TThreadedObject.hxx>
 
+#include "utils/TMVA_cuts.hpp"
+
 static const int   Max_mu_size     = 10000;
 static const bool  hasGEM          = true;
 static const float test_proportion = 0.4;
-
-
-
-bool base_cut(
-	bool  reco_isGEM,
-	bool  reco_isTracker,
-	bool  reco_isGlobal,
-	int   nHitsMu,
-	int   nHitsTracker,
-	int   nHitsPix,
-	float reco_mu_localChi2,
-	float reco_mu_normChi2,
-	float reco_mu_pt,
-	float reco_mu_eta,
-	float reco_mu_dxy,
-	float reco_mu_dz,
-	float nPV,
-	bool  reco_mu_highPurity,
-	int   reco_mu_nMatches,
-	bool  reco_muGEMquality
-) {
-	if (!reco_isGEM) {
-		return false;
-	}
-	if (reco_mu_eta < 1.6 || reco_mu_eta > 2.8) {
-		return false;
-	}
-	if (reco_mu_nMatches == 0) {
-		return false;
-	}
-	return true;
-}
 
 
 void tmva_pre_processing_from_file(const char* filename) {
@@ -96,6 +66,7 @@ void tmva_pre_processing_from_file(const char* filename) {
 	float write_reco_mu_localChi2, write_reco_mu_normChi2, write_reco_mu_pt, write_reco_mu_eta;
 	float write_reco_mu_dxy, write_reco_mu_dz, write_nPV;
 /*int*/ float write_reco_mu_nMatches, write_reco_muGEMquality;
+	float write_gen_weight;
 
 	std::vector<std::tuple<const char*, float*, const char*>> ptr_map = {
 		{"Reco_mu_isGEM",       &write_reco_mu_isGEM,      "Reco_mu_isGEM/F" /*O*/},
@@ -114,7 +85,9 @@ void tmva_pre_processing_from_file(const char* filename) {
 
 		{"Reco_mu_highPurity",  &write_reco_mu_highPurity, "Reco_mu_highPurity/F" /*O*/},
 		{"Reco_mu_nMatches",    &write_reco_mu_nMatches,   "Reco_mu_nMatches/F" /*I*/},
-		{"Reco_muGEMquality",   &write_reco_muGEMquality,  "Reco_muGEMquality/F" /*O*/}
+		{"Reco_muGEMquality",   &write_reco_muGEMquality,  "Reco_muGEMquality/F" /*O*/},
+
+		{"Gen_weight",          &write_gen_weight,         "Gen_weight/F"}
 	};
 
 
@@ -137,13 +110,15 @@ void tmva_pre_processing_from_file(const char* filename) {
 	----------------------------------------- */
 
 	
-	float gen_mu_pt, gen_mu_eta;
+	float gen_mu_pt, gen_mu_eta, gen_mu_weight;
 
-	gen_tree_train->Branch("Gen_mu_pt",  &gen_mu_pt,  "Gen_mu_pt/F");
-	gen_tree_train->Branch("Gen_mu_eta", &gen_mu_eta, "Gen_mu_eta/F");
+	gen_tree_train->Branch("Gen_mu_pt",  &gen_mu_pt,     "Gen_mu_pt/F");
+	gen_tree_train->Branch("Gen_mu_eta", &gen_mu_eta,    "Gen_mu_eta/F");
+	gen_tree_train->Branch("Gen_weight", &gen_mu_weight, "Gen_weight/F");
 
-	gen_tree_test->Branch("Gen_mu_pt",  &gen_mu_pt,  "Gen_mu_pt/F");
-	gen_tree_test->Branch("Gen_mu_eta", &gen_mu_eta, "Gen_mu_eta/F");
+	gen_tree_test->Branch("Gen_mu_pt",  &gen_mu_pt,     "Gen_mu_pt/F");
+	gen_tree_test->Branch("Gen_mu_eta", &gen_mu_eta,    "Gen_mu_eta/F");
+	gen_tree_test->Branch("Gen_weight", &gen_mu_weight, "Gen_weight/F");
 
 
 
@@ -184,10 +159,12 @@ void tmva_pre_processing_from_file(const char* filename) {
 	read_tree->SetBranchAddress("Reco_mu_nMatches",  &reco_mu_nMatches);
 	read_tree->SetBranchAddress("Reco_muGEMquality", &reco_muGEMquality);
 
+	float read_gen_weight;
 	short reco_mu_idx[Max_mu_size];
 	TClonesArray *gen_mu_4mom = new TClonesArray("TLorentzVector", Max_mu_size);
 	read_tree->SetBranchAddress("Gen_mu_whichRec", &reco_mu_idx);
 	read_tree->SetBranchAddress("Gen_mu_4mom",     &gen_mu_4mom);
+	read_tree->SetBranchAddress("Gen_weight",      &read_gen_weight);
 
 	/* -----------------------------------------
 	--------------------------------------------
@@ -219,8 +196,9 @@ void tmva_pre_processing_from_file(const char* filename) {
 			if (isTest) { gen_tree_test->GetEntry(n_gen_test++);   }
 			else        { gen_tree_train->GetEntry(n_gen_train++); }
 
-			gen_mu_pt  = mom4->Pt();
-			gen_mu_eta = mom4->Eta();
+			gen_mu_pt     = mom4->Pt();
+			gen_mu_eta    = mom4->Eta();
+	    	gen_mu_weight = read_gen_weight;
 
 			if (isTest) { gen_tree_test->Fill();  }
 			else        { gen_tree_train->Fill(); }
@@ -234,7 +212,7 @@ void tmva_pre_processing_from_file(const char* filename) {
 			bool  isTest = randF < test_proportion;
 
 	    	bool  isTrueMuon = gen_idx >= 0 && gen_idx < gen_mu_size;
-	   		bool cut         = base_cut(
+	   		bool cut         = pass_TMVA_pre_cut(
 				hasGEM ?
 					reco_mu_isGEM [i] : false,
 				reco_isTracker    [i],
@@ -286,6 +264,8 @@ void tmva_pre_processing_from_file(const char* filename) {
 
 	    	write_reco_mu_pt  =     mom4->Pt();
 	    	write_reco_mu_eta = abs(mom4->Eta());
+
+	    	write_gen_weight = read_gen_weight;
 
 
 			if (isTest) { write_tree_test->Fill();  }

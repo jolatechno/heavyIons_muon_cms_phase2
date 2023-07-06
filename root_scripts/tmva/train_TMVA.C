@@ -29,6 +29,9 @@
 #include <ROOT/TTreeProcessorMT.hxx>
 #include <ROOT/TThreadedObject.hxx>
 
+#include "utils/TMVA_cuts.hpp"
+
+
 void train_TMVA_from_filename(const char *fname)  {
     TMVA::Tools::Instance();
 
@@ -83,6 +86,9 @@ void train_TMVA_from_filename(const char *fname)  {
     dataloader->AddSignalTree    (signalTree_test,      signalWeight,     "Test");
     dataloader->AddBackgroundTree(backgroundTree_train, backgroundWeight, "Training");
     dataloader->AddBackgroundTree(backgroundTree_test,  backgroundWeight, "Test");
+
+    dataloader->SetSignalWeightExpression    ("Gen_weight");
+    dataloader->SetBackgroundWeightExpression("Gen_weight");
 
 
     TCut mycuts = "";

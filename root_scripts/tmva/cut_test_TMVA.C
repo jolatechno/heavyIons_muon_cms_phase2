@@ -30,41 +30,12 @@
 #include <ROOT/TTreeProcessorMT.hxx>
 #include <ROOT/TThreadedObject.hxx>
 
+#include "utils/TMVA_cuts.hpp"
+
 static const bool hasGEM = true;
 static const bool plotOnlyGEM = false;
 
 const float wp = 0.6;
-
-
-bool base_cut(
-	bool  reco_isGEM,
-	bool  reco_isTracker,
-	bool  reco_isGlobal,
-	int   nHitsMu,
-	int   nHitsTracker,
-	int   nHitsPix,
-	float reco_mu_localChi2,
-	float reco_mu_normChi2,
-	float reco_mu_pt,
-	float reco_mu_eta,
-	float reco_mu_dxy,
-	float reco_mu_dz,
-	float nPV,
-	bool  reco_mu_highPurity,
-	int   reco_mu_nMatches,
-	bool  reco_muGEMquality
-) {
-	if (!reco_isGEM) {
-		return false;
-	}
-	if (reco_mu_eta < 1.6 || reco_mu_eta > 2.8) {
-		return false;
-	}
-	if (reco_mu_nMatches == 0) {
-		return false;
-	}
-	return true;
-}
 
 
 TCanvas* cut_test_from_name(const char* filename) {
@@ -102,9 +73,10 @@ TCanvas* cut_test_from_name(const char* filename) {
 
 	std::cout << "Set branches adress..." << std::endl;
 
-	float gen_mu_pt, gen_mu_eta;
-	gen_tree->SetBranchAddress("Gen_mu_pt",  &gen_mu_pt);
-	gen_tree->SetBranchAddress("Gen_mu_eta", &gen_mu_eta);
+	float gen_mu_pt, gen_mu_eta, gen_mu_weight;
+	gen_tree->SetBranchAddress("Gen_mu_pt",     &gen_mu_pt);
+	gen_tree->SetBranchAddress("Gen_mu_eta",    &gen_mu_eta);
+	gen_tree->SetBranchAddress("Gen_mu_weight", &gen_mu_weight);
 
 	// create new branch
 /*int*/ float reco_mu_isFake;
@@ -132,6 +104,9 @@ TCanvas* cut_test_from_name(const char* filename) {
 /*int*/ float reco_mu_nMatches, reco_muGEMquality;
 	read_tree->SetBranchAddress("Reco_mu_nMatches",   &reco_mu_nMatches);
 	read_tree->SetBranchAddress("Reco_muGEMquality",  &reco_muGEMquality);
+
+	float read_mu_weight;
+	read_tree->SetBranchAddress("Gen_mu_weight", &read_mu_weight);
 
 
     std::cout << "Add variables..." << std::endl;
@@ -181,7 +156,7 @@ TCanvas* cut_test_from_name(const char* filename) {
 	    gen_tree->GetEntry(iEntry);
 		
 		n_gen++;
-		gen.Fill(gen_mu_pt);
+		gen.Fill(gen_mu_pt, gen_mu_weight);
 	}
 
 	n_entries = read_tree->GetEntries();
@@ -197,37 +172,39 @@ TCanvas* cut_test_from_name(const char* filename) {
 	   		continue;
 	   	}
 
-		if (!plotOnlyGEM || base_cut(
-				reco_mu_isGEM,
-				reco_isTracker,
-				reco_isGlobal,
-				nHitsMu,
-				nHitsTracker,
-				nHitsPix,
-				reco_mu_localChi2,
-				reco_mu_normChi2,
-				reco_mu_pt,
-				reco_mu_eta,
-				reco_mu_dxy,
-				reco_mu_dz,
-			    nPV,
-				reco_mu_highPurity,
-				reco_mu_nMatches,
-				reco_muGEMquality
-			))
+	   	bool is_in_TMVA_domain = pass_TMVA_domain_cut(
+			reco_mu_isGEM,
+			reco_isTracker,
+			reco_isGlobal,
+			nHitsMu,
+			nHitsTracker,
+			nHitsPix,
+			reco_mu_localChi2,
+			reco_mu_normChi2,
+			reco_mu_pt,
+			reco_mu_eta,
+			reco_mu_dxy,
+			reco_mu_dz,
+		    nPV,
+			reco_mu_highPurity,
+			reco_mu_nMatches,
+			reco_muGEMquality
+		);
+
+		if (!plotOnlyGEM || is_in_TMVA_domain)
 		{
-			reco.Fill(reco_mu_pt);
+			reco.Fill(reco_mu_pt, read_mu_weight);
 			if (reco_mu_isFake) {
 				n_false++;
-				recoFake.Fill(reco_mu_pt);
+				recoFake.Fill(reco_mu_pt, read_mu_weight);
 			} else {
 				n_true++;
-				recoTrue.Fill(reco_mu_pt);
+				recoTrue.Fill(reco_mu_pt, read_mu_weight);
 			}
 		}
 
-		if (reco_mu_isGEM) {
-				if (base_cut(
+		if (is_in_TMVA_domain) {
+				if (pass_TMVA_pre_cut(
 					reco_mu_isGEM,
 					reco_isTracker,
 					reco_isGlobal,
@@ -250,13 +227,13 @@ TCanvas* cut_test_from_name(const char* filename) {
 			    bool  pass = proba > wp;
 
 			    if (pass) {
-					recoCut.Fill(reco_mu_pt);
+					recoCut.Fill(reco_mu_pt, read_mu_weight);
 					if (reco_mu_isFake) {
 						n_false_cut++;
-						recoFakeCut.Fill(reco_mu_pt);
+						recoFakeCut.Fill(reco_mu_pt, read_mu_weight);
 					} else {
 						n_true_cut++;
-						recoTrueCut.Fill(reco_mu_pt);
+						recoTrueCut.Fill(reco_mu_pt, read_mu_weight);
 					}
 				}
 			}
@@ -264,10 +241,10 @@ TCanvas* cut_test_from_name(const char* filename) {
 			recoCut.Fill(reco_mu_pt);
 			if (reco_mu_isFake) {
 				n_false_cut++;
-				recoFakeCut.Fill(reco_mu_pt);
+				recoFakeCut.Fill(reco_mu_pt, read_mu_weight);
 			} else {
 				n_true_cut++;
-				recoTrueCut.Fill(reco_mu_pt);
+				recoTrueCut.Fill(reco_mu_pt, read_mu_weight);
 			}
 		}
 	}
