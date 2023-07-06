@@ -165,6 +165,7 @@ void tmva_pre_processing_from_file(const char* filename) {
 	read_tree->SetBranchAddress("Gen_mu_whichRec", &reco_mu_idx);
 	read_tree->SetBranchAddress("Gen_mu_4mom",     &gen_mu_4mom);
 	read_tree->SetBranchAddress("Gen_weight",      &read_gen_weight);
+	
 
 	/* -----------------------------------------
 	--------------------------------------------
@@ -266,7 +267,6 @@ void tmva_pre_processing_from_file(const char* filename) {
 	    	write_reco_mu_eta = abs(mom4->Eta());
 
 	    	write_gen_weight = read_gen_weight;
-
 
 			if (isTest) { write_tree_test->Fill();  }
 			else        { write_tree_train->Fill(); }

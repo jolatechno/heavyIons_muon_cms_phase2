@@ -35,7 +35,7 @@
 static const bool hasGEM = true;
 static const bool plotOnlyGEM = false;
 
-const float wp = 0.6;
+const float wp = 0.2;
 
 
 TCanvas* cut_test_from_name(const char* filename) {
@@ -74,9 +74,9 @@ TCanvas* cut_test_from_name(const char* filename) {
 	std::cout << "Set branches adress..." << std::endl;
 
 	float gen_mu_pt, gen_mu_eta, gen_mu_weight;
-	gen_tree->SetBranchAddress("Gen_mu_pt",     &gen_mu_pt);
-	gen_tree->SetBranchAddress("Gen_mu_eta",    &gen_mu_eta);
-	gen_tree->SetBranchAddress("Gen_mu_weight", &gen_mu_weight);
+	gen_tree->SetBranchAddress("Gen_mu_pt",  &gen_mu_pt);
+	gen_tree->SetBranchAddress("Gen_mu_eta", &gen_mu_eta);
+	gen_tree->SetBranchAddress("Gen_weight", &gen_mu_weight);
 
 	// create new branch
 /*int*/ float reco_mu_isFake;
@@ -106,7 +106,7 @@ TCanvas* cut_test_from_name(const char* filename) {
 	read_tree->SetBranchAddress("Reco_muGEMquality",  &reco_muGEMquality);
 
 	float read_mu_weight;
-	read_tree->SetBranchAddress("Gen_mu_weight", &read_mu_weight);
+	read_tree->SetBranchAddress("Gen_weight", &read_mu_weight);
 
 
     std::cout << "Add variables..." << std::endl;
@@ -168,10 +168,6 @@ TCanvas* cut_test_from_name(const char* filename) {
 			std::cout << "\t\tadvancment: " << n_gen << "  " << n_false << "/" << n_true << " -> " << n_false_cut << "/" << n_true_cut << std::endl;
 	   	}
 
-	   	if (reco_mu_eta < 1.6 || reco_mu_eta > 2.8) {
-	   		continue;
-	   	}
-
 	   	bool is_in_TMVA_domain = pass_TMVA_domain_cut(
 			reco_mu_isGEM,
 			reco_isTracker,
@@ -204,25 +200,24 @@ TCanvas* cut_test_from_name(const char* filename) {
 		}
 
 		if (is_in_TMVA_domain) {
-				if (pass_TMVA_pre_cut(
-					reco_mu_isGEM,
-					reco_isTracker,
-					reco_isGlobal,
-					nHitsMu,
-					nHitsTracker,
-					nHitsPix,
-					reco_mu_localChi2,
-					reco_mu_normChi2,
-					reco_mu_pt,
-					reco_mu_eta,
-					reco_mu_dxy,
-					reco_mu_dz,
-				    nPV,
-					reco_mu_highPurity,
-					reco_mu_nMatches,
-					reco_muGEMquality
-				))
-			{
+			if (pass_TMVA_pre_cut(
+				reco_mu_isGEM,
+				reco_isTracker,
+				reco_isGlobal,
+				nHitsMu,
+				nHitsTracker,
+				nHitsPix,
+				reco_mu_localChi2,
+				reco_mu_normChi2,
+				reco_mu_pt,
+				reco_mu_eta,
+				reco_mu_dxy,
+				reco_mu_dz,
+			    nPV,
+				reco_mu_highPurity,
+				reco_mu_nMatches,
+				reco_muGEMquality
+			)) {
 				float proba = reader->EvaluateMVA("BDTG");
 			    bool  pass = proba > wp;
 
