@@ -27,6 +27,14 @@
 #include <RooPlot.h>
 using namespace RooFit;
 
+#include <TMVA/Reader.h>
+#include <TMVA/Factory.h>
+#include <TMVA/DataLoader.h>
+#include <TMVA/DataSetInfo.h>
+#include <TMVA/Config.h>
+#include <TMVA/MethodDL.h>
+#include <TMVA/Tools.h>
+
 #include <ROOT/TTreeProcessorMT.hxx>
 #include <ROOT/TThreadedObject.hxx>
 
@@ -34,11 +42,13 @@ using namespace RooFit;
 #include "utils/TMVA_cuts.hpp"
 bool embeding = false;
 bool hasGEM = true;
+bool plotOnlyGEM = false;
+float wp = 0.6;
 
 TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 	float massMin = 2.6, massMax = 3.4;
 	uint massBins = 100;
-	int max_n_event = -1;
+	int max_n_event = 50000;
 
 	float xSize = 0.3, ySize = 0.15;
 	float xBegin = 0.12, yBegin = 0.87;
@@ -48,9 +58,58 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 	float QQrapidityCutLow = 1.6, QQrapidityCutHigh = 2.4;
 	float minVtxProb = 0.01;
 
-	int nthreads = std::thread::hardware_concurrency();
+	int nthreads = 1; //std::thread::hardware_concurrency();
 	std::cout << "using " << nthreads << " threads" << std::endl;
 	ROOT::EnableImplicitMT(nthreads);
+
+
+
+    TMVA::Reader *reader = new TMVA::Reader("!Color:!Silent");
+    const char *weightfile = "dataloader/weights/TMVAClassification_BDTG.weights.xml";
+
+/*int*/ float reco_mu_isGEM_, reco_isTracker_, reco_isGlobal_, reco_mu_highPurity_;
+/*int*/ float nHitsMu_, nHitsTracker_, nHitsPix_;
+	float reco_mu_localChi2_, reco_mu_normChi2_, reco_mu_pt_, reco_mu_eta_;
+	float reco_mu_dxy_, reco_mu_dz_, nPV_;
+/*int*/ float reco_mu_nMatches_, reco_muGEMquality_;
+
+    std::vector<TString> var_names = {
+    	"Reco_mu_nMuValHits",
+    	"Reco_mu_nTrkHits",
+    	"Reco_mu_nPixValHits",
+    	"Reco_mu_localChi2",
+	 // "Reco_mu_normChi2",
+    	"Reco_mu_pt",
+    	"Reco_mu_eta",
+    	"Reco_mu_dxy",
+    	"Reco_mu_dz",
+    	"nPV",
+	 // "Reco_mu_highPurity",
+	    "Reco_mu_nMatches" // ,
+	 // "Reco_muGEMquality"
+    };
+    std::map<TString, float*> float_variables = {
+    	{"Reco_mu_nMuValHits",  &nHitsMu_},
+    	{"Reco_mu_nTrkHits",    &nHitsTracker_},
+    	{"Reco_mu_nPixValHits", &nHitsPix_},
+    	{"Reco_mu_localChi2",   &reco_mu_localChi2_},
+	 // {"Reco_mu_normChi2",    &reco_mu_normChi2_},
+    	{"Reco_mu_pt",          &reco_mu_pt_},
+    	{"Reco_mu_eta",         &reco_mu_eta_},
+    	{"Reco_mu_dxy",         &reco_mu_dxy_},
+    	{"Reco_mu_dz",          &reco_mu_dz_},
+    	{"nPV",                 &nPV_},
+	 // {"Reco_mu_highPurity",  &reco_mu_highPurity_},
+	    {"Reco_mu_nMatches",    &reco_mu_nMatches_} // ,
+	 // {"Reco_muGEMquality",   &reco_muGEMquality_}
+    };
+    for (auto var_name : var_names) {
+        reader->AddVariable(var_name, float_variables[var_name]);
+    }
+
+    std::cout << "Read model..." << std::endl;
+    reader->BookMVA("BDTG", weightfile);
+    std::cout << "... Done" << std::endl;
 
 
 	auto readerFunction = [&](TTreeReader &myReader) {
@@ -77,6 +136,7 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 		TTreeReaderArray<short>        mu_whichgen   (myReader, "Reco_mu_whichGen");
 		TTreeReaderArray<bool>         is_soft_cut   (myReader, "Reco_mu_isSoftCutBased"); //"Reco_mu_isSoftCutBased"); //"Reco_mu_isGlobal);" //"Reco_mu_isTracker");
 		TTreeReaderArray<bool>         reco_isTracker(myReader, "Reco_mu_isTracker"); //"Reco_mu_isGlobal");
+		TTreeReaderArray<short>        reco_mu_charge(myReader, "Reco_mu_charge");
 
 		TTreeReaderArray<bool>  reco_mu_isGEM     (myReader, hasGEM ? "Reco_mu_isGEM" : "Reco_mu_isTracker");
 		TTreeReaderArray<bool>  reco_isGlobal     (myReader, "Reco_mu_isGlobal");
@@ -107,6 +167,10 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 		    	if (isPositiv) {
 		    		int reco_idx = reco_mu_idx[QQreco_idx], reco_jdx = reco_mu_jdx[QQreco_idx];
 
+			    	if (reco_mu_charge[reco_idx]*reco_mu_charge[reco_jdx] >= 0) {
+			    		continue;
+			    	}
+
 			    	      mom4         = (TLorentzVector*)reco_mu_4mom->At(reco_idx);
 		    		float reco_mu_pti  = mom4->Pt();
 		    		float reco_mu_etai = abs(mom4->Rapidity());
@@ -116,7 +180,7 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 		    		float reco_mu_etaj = abs(mom4->Rapidity());
 
 		    		// conditions on muons
-			    	if (!pass_TMVA_pre_cut(
+		    		if (pass_TMVA_domain_cut(
 						hasGEM ? reco_mu_isGEM[reco_idx] : false,
 						reco_isTracker    [reco_idx],
 						reco_isGlobal     [reco_idx],
@@ -134,27 +198,102 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 						reco_mu_nMatches  [reco_idx],
 						reco_muGEMquality [reco_idx]
 					)) {
-			    		continue;
+				    	if (!pass_TMVA_pre_cut(
+							hasGEM ? reco_mu_isGEM[reco_idx] : false,
+							reco_isTracker    [reco_idx],
+							reco_isGlobal     [reco_idx],
+							nHitsMu           [reco_idx],
+							nHitsTracker      [reco_idx],
+							nHitsPix          [reco_idx],
+							reco_mu_localChi2 [reco_idx],
+							reco_mu_normChi2  [reco_idx],
+							reco_mu_pti,
+							reco_mu_etai,
+							reco_mu_dxy       [reco_idx],
+							reco_mu_dz        [reco_idx],
+						   *nPV,
+							reco_mu_highPurity[reco_idx],
+							reco_mu_nMatches  [reco_idx],
+							reco_muGEMquality [reco_idx]
+						)) {
+				    		continue;
+						}
+
+						nHitsMu_           = nHitsMu          [reco_idx];
+						nHitsTracker_      = nHitsTracker     [reco_idx];
+						nHitsPix_          = nHitsPix         [reco_idx];
+						reco_mu_localChi2_ = reco_mu_localChi2[reco_idx];
+						reco_mu_pt_        = reco_mu_pti;
+						reco_mu_eta_       = reco_mu_etai;
+						reco_mu_dxy_       = reco_mu_dxy      [reco_idx];
+						reco_mu_dz_        = reco_mu_dz       [reco_idx];
+						nPV_               = *nPV;
+						reco_mu_nMatches_  = reco_mu_nMatches [reco_idx];
+
+						float proba = reader->EvaluateMVA("BDTG");
+						if (proba < wp) {
+							continue;
+						}
+					} else if (plotOnlyGEM) {
+						continue;
 					}
-					if (!pass_TMVA_pre_cut(
-						hasGEM ? reco_mu_isGEM[reco_jdx] : false,
-						reco_isTracker    [reco_jdx],
-						reco_isGlobal     [reco_jdx],
-						nHitsMu           [reco_jdx],
-						nHitsTracker      [reco_jdx],
-						nHitsPix          [reco_jdx],
-						reco_mu_localChi2 [reco_jdx],
-						reco_mu_normChi2  [reco_jdx],
+
+		    		if (pass_TMVA_domain_cut(
+						hasGEM ? reco_mu_isGEM[reco_idx] : false,
+						reco_isTracker    [reco_idx],
+						reco_isGlobal     [reco_idx],
+						nHitsMu           [reco_idx],
+						nHitsTracker      [reco_idx],
+						nHitsPix          [reco_idx],
+						reco_mu_localChi2 [reco_idx],
+						reco_mu_normChi2  [reco_idx],
 						reco_mu_pti,
 						reco_mu_etai,
-						reco_mu_dxy       [reco_jdx],
-						reco_mu_dz        [reco_jdx],
+						reco_mu_dxy       [reco_idx],
+						reco_mu_dz        [reco_idx],
 					   *nPV,
-						reco_mu_highPurity[reco_jdx],
-						reco_mu_nMatches  [reco_jdx],
-						reco_muGEMquality [reco_jdx]
+						reco_mu_highPurity[reco_idx],
+						reco_mu_nMatches  [reco_idx],
+						reco_muGEMquality [reco_idx]
 					)) {
-			    		continue;
+						if (!pass_TMVA_pre_cut(
+							hasGEM ? reco_mu_isGEM[reco_jdx] : false,
+							reco_isTracker    [reco_jdx],
+							reco_isGlobal     [reco_jdx],
+							nHitsMu           [reco_jdx],
+							nHitsTracker      [reco_jdx],
+							nHitsPix          [reco_jdx],
+							reco_mu_localChi2 [reco_jdx],
+							reco_mu_normChi2  [reco_jdx],
+							reco_mu_pti,
+							reco_mu_etai,
+							reco_mu_dxy       [reco_jdx],
+							reco_mu_dz        [reco_jdx],
+						   *nPV,
+							reco_mu_highPurity[reco_jdx],
+							reco_mu_nMatches  [reco_jdx],
+							reco_muGEMquality [reco_jdx]
+						)) {
+				    		continue;
+						}
+
+						nHitsMu_           = nHitsMu          [reco_jdx];
+						nHitsTracker_      = nHitsTracker     [reco_jdx];
+						nHitsPix_          = nHitsPix         [reco_jdx];
+						reco_mu_localChi2_ = reco_mu_localChi2[reco_jdx];
+						reco_mu_pt_        = reco_mu_ptj;
+						reco_mu_eta_       = reco_mu_etaj;
+						reco_mu_dxy_       = reco_mu_dxy      [reco_jdx];
+						reco_mu_dz_        = reco_mu_dz       [reco_jdx];
+						nPV_               = *nPV;
+						reco_mu_nMatches_  = reco_mu_nMatches [reco_jdx];
+
+						float proba = reader->EvaluateMVA("BDTG");
+						if (proba < wp) {
+							continue;
+						}
+					} else if (plotOnlyGEM) {
+						continue;
 					}
 
 			    	massHist->Fill(recMass, weigth);

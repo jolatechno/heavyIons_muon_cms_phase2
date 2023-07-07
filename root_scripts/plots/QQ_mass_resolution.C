@@ -75,13 +75,14 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 		TTreeReaderArray<short>        mu_whichgen   (myReader, "Reco_mu_whichGen");
 		TTreeReaderArray<bool>         is_soft_cut   (myReader, "Reco_mu_isSoftCutBased"); //"Reco_mu_isSoftCutBased"); //"Reco_mu_isGlobal);" //"Reco_mu_isTracker");
 		TTreeReaderArray<bool>         reco_isTracker(myReader, "Reco_mu_isTracker"); //"Reco_mu_isGlobal");
+		TTreeReaderArray<short>        reco_mu_charge(myReader, "Reco_mu_charge");
 
 		for (int j = 0; myReader.Next() && (j < max_n_event/nthreads || max_n_event <= 0); j++) {
 			float weigth = embeding ? findNcoll(getHiBinFromhiHF(*hiHF)) : 1.f;
 
 			for (int QQreco_idx = 0; QQreco_idx < *reco_QQ_size; ++QQreco_idx) {
 				short i         = gen_QQ_idx[QQreco_idx];
-		    	bool  isPositiv = i >= 0 && i < *gen_QQ_size;
+		    	bool  isPositiv = true; // i >= 0 && i < *gen_QQ_size;
 
 		    	TLorentzVector* mom4    = (TLorentzVector*)reco_QQ_4mom->At(QQreco_idx);
 		    	float           recPt   = mom4->Pt();
@@ -92,12 +93,12 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 		    		int reco_idx = reco_mu_idx[QQreco_idx], reco_jdx = reco_mu_jdx[QQreco_idx];
 			    	int gen_idx = gen_mu_idx[i], gen_jdx = gen_mu_jdx[i];
 
-			    	      mom4 = (TLorentzVector*)reco_QQ_4mom->At(QQreco_idx);
-		    		float pt   = mom4->Pt();
-		    		float eta  = abs(mom4->Rapidity());
+			    	if (reco_mu_charge[reco_idx]*reco_mu_charge[reco_jdx] >= 0) {
+			    		continue;
+			    	}
 
 		    		// conditions on muons
-			    	if ((reco_idx != gen_idx || reco_jdx != gen_jdx) &&
+			    	/* if ((reco_idx != gen_idx || reco_jdx != gen_jdx) &&
 			    		(reco_jdx != gen_idx || reco_idx != gen_jdx))
 			    		continue;
 		    		if (!is_soft_cut[reco_idx] || !is_soft_cut[reco_jdx])
@@ -114,7 +115,7 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 			    	if (reco_QQ_sign[QQreco_idx] != 0)
 			    		continue;
 			    	if (reco_QQ_VtxProb[QQreco_idx] < minVtxProb)
-			    		continue;
+			    		continue; */
 
 			    	massHist->Fill(recMass, weigth);
 		    	}
