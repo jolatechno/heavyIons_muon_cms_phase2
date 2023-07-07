@@ -165,7 +165,7 @@ void tmva_pre_processing_from_file(const char* filename) {
 	read_tree->SetBranchAddress("Gen_mu_whichRec", &reco_mu_idx);
 	read_tree->SetBranchAddress("Gen_mu_4mom",     &gen_mu_4mom);
 	read_tree->SetBranchAddress("Gen_weight",      &read_gen_weight);
-	
+
 
 	/* -----------------------------------------
 	--------------------------------------------
@@ -197,8 +197,8 @@ void tmva_pre_processing_from_file(const char* filename) {
 			if (isTest) { gen_tree_test->GetEntry(n_gen_test++);   }
 			else        { gen_tree_train->GetEntry(n_gen_train++); }
 
-			gen_mu_pt     = mom4->Pt();
-			gen_mu_eta    = mom4->Eta();
+			gen_mu_pt     =     mom4->Pt();
+			gen_mu_eta    = abs(mom4->Eta());
 	    	gen_mu_weight = read_gen_weight;
 
 			if (isTest) { gen_tree_test->Fill();  }

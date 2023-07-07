@@ -17,6 +17,7 @@
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
 #include <TTree.h>
+#include <TLegend.h>
 
 #include <RooRealVar.h>
 #include <RooDataSet.h>
@@ -36,6 +37,9 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 	float massMin = 2.6, massMax = 3.4;
 	uint massBins = 100;
 	int max_n_event = -1;
+
+	float xSize = 0.3, ySize = 0.15;
+	float xBegin = 0.12, yBegin = 0.87;
 
 	ROOT::TThreadedObject<TH1F> massHist("mass", "J/#Psi reconstructed invariant mass;J/#Psi mass;\\#Ocurences", massBins, massMin, massMax);
 
@@ -135,10 +139,16 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 	RooRealVar mean("mean", "mean of gaussian", (massMin + massMax)/2.f, massMin, massMax);
 	RooRealVar sigma("sigma", "width of gaussian", 0.1, 0.001, 10);
 	// declare weird variables
-	RooRealVar alpha("alpha", "", 1.f, -1000.f, 1000.f);
-	RooRealVar n("n", "", 1.f, -1000.f, 1000.f);
+	RooRealVar alphaL("alphaL", "", 2.f, 1e-1, 1e1);
+	RooRealVar alphaR("alphaR", "", 2.f, 1e-1, 1e1);
+	RooRealVar nL("nL", "", 2.f, 1e-1, 5e1);
+	RooRealVar nR("nR", "", 2.f, 1e-1, 5e1);
 	// Build gaussian pdf in terms of x,mean and sigma
-	RooCBShape gauss("gauss", "gaussian PDF", x, mean, sigma, alpha, n);
+	RooCrystalBall gauss("gauss", "gaussian PDF", x, mean, sigma, alphaL, alphaR, nL, nR);
+ // RooRealVar     sigmaR("sigma", "width of gaussian", 2e-2, 1e-5, mass_width/2);
+ // RooCrystalBall gauss("gauss", "gaussian PDF", x, mean, sigma, sigmaR, alphaL, alphaR, nL, nR);
+ // RooCrystalBall gauss("gauss", "gaussian PDF", x, mean, sigma, alphaL, nL);
+ // RooCBShape     gauss("gauss", "gaussian PDF", x, mean, sigma, alphaL, nL);
 
 	RooPlot *frame = x.frame(Title("Imported TH1 with Poisson error bars"));
 	dh.plotOn(frame);
@@ -151,6 +161,24 @@ TCanvas* QQ_mass_resolution_from_name(const char* filename) {
 	// massHistMerged->SetStats(kFALSE);
 	// massHistMerged->DrawCopy("COLZ");
 	frame->Draw();
+
+	// legend
+	std::string mLegend = "m: "         + std::to_string(mean.getValV())   + " #pm "      + std::to_string(mean.getError());
+	std::string sLegend = "#sigma: "    + std::to_string(sigma.getValV() ) + " #pm "      + std::to_string(sigma.getError());
+ // std::string sLegend = "#sigmaL: "   + std::to_string(sigma.getValV() ) + " #sigmaR: " + std::to_string(sigmaR.getValV());
+	std::string cLegend = "#chi^{2}: "  + std::to_string(frame->chiSquare());
+	std::string nLegend = "nL: "        + std::to_string(nL.getValV())     + " nR: "      + std::to_string(nR.getValV());
+	std::string aLegend = "alphaL: "    + std::to_string(alphaL.getValV()) + " alphaR: "  + std::to_string(alphaR.getValV());
+	//plot
+	TLegend *leg = new TLegend(xBegin, yBegin - ySize, xBegin + xSize, yBegin);
+	leg->SetHeader("fit", "C");
+	leg->AddEntry ((TObject*)0, mLegend.c_str(), "");
+	leg->AddEntry ((TObject*)0, sLegend.c_str(), "");
+	leg->AddEntry ((TObject*)0, cLegend.c_str(), "");
+	leg->AddEntry ((TObject*)0, nLegend.c_str(), "");
+	leg->AddEntry ((TObject*)0, aLegend.c_str(), "");
+
+	leg->Draw("same");
 
 	return c1;
 }

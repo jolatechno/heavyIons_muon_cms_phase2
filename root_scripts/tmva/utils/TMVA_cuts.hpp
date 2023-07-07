@@ -60,10 +60,10 @@ bool pass_TMVA_pre_cut(
 
 	pass = pass && reco_mu_nMatches > 0;
 	if (reco_isGEM) {
-		pass = pass && (reco_mu_eta > 1.6 && reco_mu_eta < 2.8);
+		pass = pass && (abs(reco_mu_eta) > 1.6 && abs(reco_mu_eta) < 2.8);
 	}
 	if (nHitsTracker) {
-		pass = pass && (reco_mu_eta > 1.2 && reco_mu_eta < 2.4);
+		pass = pass && (abs(reco_mu_eta) > 1.2 && abs(reco_mu_eta) < 2.4);
 	}
 	return pass;
 }
