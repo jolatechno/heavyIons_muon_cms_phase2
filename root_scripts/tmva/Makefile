@@ -1,4 +1,4 @@
-U_CFLAGS=$(CFLAGS) `root-config --cflags --libs` -lTMVA -pthread -O3
+U_CFLAGS=$(CFLAGS) `root-config --cflags --libs` -lRooFit -lRooFitCore -lTMVA -pthread -O3
 
 targets=$(basename $(wildcard **.C))
 
