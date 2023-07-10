@@ -33,9 +33,9 @@
 #include "utils/TMVA_cuts.hpp"
 
 static const bool hasGEM = true;
-static const bool plotOnlyGEM = false;
+static const bool plotOnlyGEM = true;
 
-const float wp = 0.2;
+const float wp = 0.6;
 
 
 TCanvas* cut_test_from_name(const char* filename) {

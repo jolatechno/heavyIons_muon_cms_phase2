@@ -98,45 +98,7 @@ TCanvas* QQ_efficiency_from_name(const char* filename) {
 		    	float           eta  = abs(mom4->Rapidity());
 
 		    	myPtEtaGen->Fill(eta, pt, weigth);
-
-		    	if (isPositiv) {
-		    		int reco_idx = reco_mu_idx[QQreco_idx], reco_jdx = reco_mu_jdx[QQreco_idx];
-			    	int gen_idx = gen_mu_idx[i], gen_jdx = gen_mu_jdx[i];
-
-			    	if (reco_mu_charge[reco_idx]*reco_mu_charge[reco_jdx] >= 0) {
-			    		continue;
-			    	}
-
-			    	      mom4   = (TLorentzVector*)reco_QQ_4mom->At(QQreco_idx);
-		    		float recPt  = mom4->Pt();
-		    		float recEta = abs(mom4->Rapidity());
-
-		    		// conditions on muons
-			    	/*if ((reco_idx != gen_idx || reco_jdx != gen_jdx) &&
-			    		(reco_jdx != gen_idx || reco_idx != gen_jdx))
-			    		continue;
-		    		if (!is_soft_cut[reco_idx] || !is_soft_cut[reco_jdx])
-			    		continue;
-			    	if (!reco_isTracker[reco_idx] || !reco_isTracker[reco_jdx])
-			    		continue;
-			    	if ((mu_whichgen[reco_idx] != gen_idx || mu_whichgen[reco_jdx] != gen_jdx) &&
-			    		(mu_whichgen[reco_jdx] != gen_idx || mu_whichgen[reco_idx] != gen_jdx))
-			    		continue;
-
-			    	// conditions on J/Psi
-			    	if (recEta < QQrapidityCutLow || recEta > QQrapidityCutHigh)
-			    		continue;
-			    	if (reco_QQ_sign[QQreco_idx] != 0)
-			    		continue;
-			    	if (reco_QQ_VtxProb[QQreco_idx] < minVtxProb)
-			    		continue;*/
-
-	    			myPtEtaEff->Fill(eta, pt, weigth);
-
-		    		myPtErr ->Fill(eta, pt, abs(pt  - recPt) /pt);
-		    		myEtaErr->Fill(eta, pt, abs(eta - recEta)/eta);
-		    	}
-			}
+		    }
 
 			for (int QQreco_idx = 0; QQreco_idx < *reco_QQ_size; ++QQreco_idx) {
 				short i         = gen_QQ_idx[QQreco_idx];
@@ -145,40 +107,48 @@ TCanvas* QQ_efficiency_from_name(const char* filename) {
 		    	TLorentzVector* mom4   = (TLorentzVector*)reco_QQ_4mom->At(QQreco_idx);
 		    	float           recPt  = mom4->Pt();
 		    	float           recEta = mom4->Rapidity();
-		    	
-		    	myPtEta->Fill(recEta, recPt, weigth);
-		    	if (isPositiv) {
-		    		int reco_idx = reco_mu_idx[QQreco_idx], reco_jdx = reco_mu_jdx[QQreco_idx];
-			    	int gen_idx = gen_mu_idx[i], gen_jdx = gen_mu_jdx[i];
 
-			    	      mom4 = (TLorentzVector*)reco_QQ_4mom->At(QQreco_idx);
+		    	int reco_idx = reco_mu_idx[QQreco_idx], reco_jdx = reco_mu_jdx[QQreco_idx];
+			    int gen_idx = gen_mu_idx[i], gen_jdx = gen_mu_jdx[i];
+
+			    if (reco_mu_charge[reco_idx]*reco_mu_charge[reco_jdx] >= 0) {
+			    	continue;
+			    }
+
+	    		// conditions on muons
+		    	/*if ((reco_idx != gen_idx || reco_jdx != gen_jdx) &&
+		    		(reco_jdx != gen_idx || reco_idx != gen_jdx))
+		    		continue;
+	    		if (!is_soft_cut[reco_idx] || !is_soft_cut[reco_jdx])
+		    		continue;
+		    	if (!reco_isTracker[reco_idx] || !reco_isTracker[reco_jdx])
+		    		continue;
+		    	if ((mu_whichgen[reco_idx] != gen_idx || mu_whichgen[reco_jdx] != gen_jdx) &&
+		    		(mu_whichgen[reco_jdx] != gen_idx || mu_whichgen[reco_idx] != gen_jdx))
+		    		continue;
+
+		    	// conditions on J/Psi
+		    	if (recEta < QQrapidityCutLow || recEta > QQrapidityCutHigh)
+		    		continue;
+		    	if (reco_QQ_sign[QQreco_idx] != 0)
+		    		continue;
+		    	if (reco_QQ_VtxProb[QQreco_idx] < minVtxProb)
+		    		continue;*/
+		    	
+
+		    	myPtEta->Fill(recEta, recPt, weigth);
+
+		    	if (isPositiv) {
+			    	      mom4 = (TLorentzVector*)gen_QQ_4mom->At(i);
 		    		float pt   = mom4->Pt();
 		    		float eta  = abs(mom4->Rapidity());
 
-			    	if (reco_mu_charge[reco_idx]*reco_mu_charge[reco_jdx] >= 0) {
-			    		continue;
-			    	}
 
-		    		// conditions on muons
-			    	/*if ((reco_idx != gen_idx || reco_jdx != gen_jdx) &&
-			    		(reco_jdx != gen_idx || reco_idx != gen_jdx))
-			    		continue;
-		    		if (!is_soft_cut[reco_idx] || !is_soft_cut[reco_jdx])
-			    		continue;
-			    	if (!reco_isTracker[reco_idx] || !reco_isTracker[reco_jdx])
-			    		continue;
-			    	if ((mu_whichgen[reco_idx] != gen_idx || mu_whichgen[reco_jdx] != gen_jdx) &&
-			    		(mu_whichgen[reco_jdx] != gen_idx || mu_whichgen[reco_idx] != gen_jdx))
-			    		continue;
+	    			myPtEtaEff->Fill(recEta, recPt, weigth);
 
-			    	// conditions on J/Psi
-			    	if (recEta < QQrapidityCutLow || recEta > QQrapidityCutHigh)
-			    		continue;
-			    	if (reco_QQ_sign[QQreco_idx] != 0)
-			    		continue;
-			    	if (reco_QQ_VtxProb[QQreco_idx] < minVtxProb)
-			    		continue;*/
-
+		    		myPtErr ->Fill(eta, pt, abs(pt  - recPt) /pt);
+		    		myEtaErr->Fill(eta, pt, abs(eta - recEta)/eta);
+		    	} else {
 		    		myPtEtaFakeRate->Fill(recEta, recPt, weigth);
 		    	}
 		    }
@@ -220,9 +190,6 @@ TCanvas* QQ_efficiency_from_name(const char* filename) {
 	ptErrMerged->Divide(ptEtaEffMerged.get());
 	etaErrMerged->Divide(ptEtaEffMerged.get());
 	ptEtaEffMerged->Divide(ptEtaGenMerged.get());
-
-	ptEtaFakeRateMerged->Add(ptEtaMerged.get(), -1);
-	ptEtaFakeRateMerged->Scale(-1);
 	ptEtaFakeRateMerged->Divide(ptEtaMerged.get());
 
 
