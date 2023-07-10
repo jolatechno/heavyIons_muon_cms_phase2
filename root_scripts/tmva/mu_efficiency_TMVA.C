@@ -44,7 +44,7 @@ std::vector<float> percentiles = {0.9, 1};
 
 
 TCanvas* mu_efficiency_from_name(const char* filename) {
-	uint etaBins = 60, ptBins = 60;
+	uint etaBins = 45, ptBins = 45;
 	float etaMin = 0, etaMax = 4;
 	float ptMin  = 0, ptMax  = 6;
 	int max_n_event = -1;
@@ -209,7 +209,7 @@ TCanvas* mu_efficiency_from_name(const char* filename) {
 		    	float           pt   = mom4->Pt();
 		    	float           eta  = abs(mom4->Eta());
 
-		    	if (pass_TMVA_domain_cut(
+		    	if ((!plotOnlyGEM || reco_mu_isGEM[i]) && pass_TMVA_domain_cut(
 					hasGEM ? reco_mu_isGEM[i] : false,
 					reco_isTracker    [i],
 					reco_isGlobal     [i],
@@ -301,11 +301,12 @@ TCanvas* mu_efficiency_from_name(const char* filename) {
 
 	std::cout << std::endl << "process..." << std::endl;
 
-	ptEtaEffTrackMerged ->Divide(ptEtaGenMerged.get());
+	ptEtaEffTrackMerged->Divide(ptEtaGenMerged.get());
+	pin_hist(ptEtaEffTrackMerged, 0, 1);
 
 	ptEtaFakeRateTrackMerged ->Divide(ptEtaTrackMerged.get());
 	zero_normalize(ptEtaFakeRateTrackMerged, ptEtaTrackMerged);
-
+	pin_hist(ptEtaFakeRateTrackMerged, 0, 1);
 
 	get_error_self(ptErrTrackMerged);
 	get_error_self(etaErrTrackMerged);

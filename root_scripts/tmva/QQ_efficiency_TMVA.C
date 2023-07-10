@@ -30,6 +30,7 @@
 #include <TMVA/Tools.h>
 
 #include "../utilities/embeding_weight.hpp"
+#include "../utilities/error_util.hpp"
 
 #include "utils/TMVA_cuts.hpp"
 
@@ -370,10 +371,15 @@ TCanvas* QQ_efficiency_from_name(const char* filename) {
 
 
 
-	ptErrMerged->Divide(ptEtaEffMerged.get());
-	etaErrMerged->Divide(ptEtaEffMerged.get());
+	get_error_self(ptErrMerged);
+	get_error_self(etaErrMerged);
+
 	ptEtaEffMerged->Divide(ptEtaGenMerged.get());
+	pin_hist(ptEtaEffMerged, 0, 1);
+
 	ptEtaFakeRateMerged->Divide(ptEtaMerged.get());
+	zero_normalize(ptEtaFakeRateMerged, ptEtaEffMerged);
+	pin_hist(ptEtaFakeRateMerged, 0, 1);
 
 
 

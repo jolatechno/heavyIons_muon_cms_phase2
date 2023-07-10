@@ -18,7 +18,7 @@ bool pass_TMVA_domain_cut(
 	int   reco_mu_nMatches,
 	bool  reco_muGEMquality
 ) {
-	return reco_isGEM || reco_isTracker;
+	return reco_isGEM || (reco_isTracker && abs(reco_mu_eta) > 1.2);
 }
 
 bool pass_TMVA_pre_cut(
@@ -59,12 +59,12 @@ bool pass_TMVA_pre_cut(
 	);
 
 	pass = pass && reco_mu_nMatches > 0;
-
 	if (reco_isGEM) {
 		pass = pass && (abs(reco_mu_eta) > 1.6 && abs(reco_mu_eta) < 2.8);
 	}
 	if (reco_isTracker) {
-		pass = pass && (abs(reco_mu_eta) > 1.2 && abs(reco_mu_eta) < 2.4);
+		pass = pass && abs(reco_mu_eta) < 2.4;
 	}
+
 	return pass;
 }
